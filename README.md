@@ -46,6 +46,10 @@ Some applications are available on "Internet Archive":
 
 [Magic Painter](https://archive.org/details/a8b_Magic_Painter_Documentation_1984_Fischer_Ralf_Manseicher_Harald)
 
+Turbo 2000 Casette Operating system is available in [Česko slovenský archív programov pre ATARI XE/XL](http://atari.turiecfoto.sk/soft/):
+
+[TOS 4.1](http://atari.turiecfoto.sk/soft/tos-41.zip)
+
 To make the user manual look as if it was printed on an ATARI 1029 printer, a special font from [jeffpiep's](https://github.com/jeffpiep) repository was used:
 
 [ATARI 1029 printer font](https://github.com/jeffpiep/Atari-Printer-Fonts/tree/master/Atari1029)
