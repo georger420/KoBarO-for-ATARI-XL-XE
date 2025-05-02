@@ -24,3 +24,28 @@ Machine code is placed from $2000 address, basic program starts some bytes after
 
 All preserved souce codes are placed in [src](./src/) directory. Unfortunately some machine code source code has not been preserved.
 
+## Links
+
+Most part of graphics editors for ATARI XL/XE mentioned in user guide are available on www.atarimania.com:
+
+[DrawIt!](https://www.atarimania.com/utility-atari-400-800-xl-xe-drawit_29938.html)
+
+[Design Master](https://www.atarimania.com/utility-atari-400-800-xl-xe-design-master_12516.html)
+
+[Fun With Art](https://www.atarimania.com/utility-atari-400-800-xl-xe-fun-with-art_27410.html)
+
+[Koala Micro Illustrator](https://www.atarimania.com/utility-atari-400-800-xl-xe-micro-illustrator_30240.html)
+
+[MicroPainter](https://www.atarimania.com/utility-atari-400-800-xl-xe-micro-painter_31609.html)
+
+[Ranbrandt](https://www.atarimania.com/utility-atari-400-800-xl-xe-rambrandt_12480.html)
+
+Some applications are available on "Internet Archive":
+
+[SAM Painter](https://archive.org/details/a8b_Screen_Aided_Management_v1.2_1987_Raindorfsoft)
+
+[Magic Painter](https://archive.org/details/a8b_Magic_Painter_Documentation_1984_Fischer_Ralf_Manseicher_Harald)
+
+To make the user manual look as if it was printed on an ATARI 1029 printer, a special font from [jeffpiep's](https://github.com/jeffpiep) repository was used:
+
+[ATARI 1029 printer font](https://github.com/jeffpiep/Atari-Printer-Fonts/tree/master/Atari1029)
