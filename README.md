@@ -4,7 +4,7 @@ Application for 8 bit ATARI XL or XE with at least 64 kb memory.
 
 ## Description
 
-Following two pictures sey more, then long text:
+Following two pictures say more, then long text:
 
 The input is four color picture (Graphics 3, 5, 7 and 16):
 
