@@ -1,0 +1,490 @@
+1000 ;*******************************
+1002 ;*        D  E  K  O  A        *
+1004 ;*=============================*
+1006 ;*Po vyvolani vykresli na obra-*
+1008 ;*zovce v modu GR.15+16 obrazek*
+1010 ;*vytvoreny a ulozeny programem*
+1012 ;*KOALA MICROILLUSTRATOR.      *
+1014 ;*-----------------------------*
+1016 ;*Podprogram se vyvolava prika-*
+1018 ;*zem: X=USR(DEKOA,OBR), kde   *
+1020 ;*DEKOA je startovaci adresa   *
+1022 ;*tohoto podprogramu, a OBR je *
+1024 ;*adresa souboru KOALA.
+1026 ;*Pred volanim podprogramu musi*
+1028 ;*byt jiz vyvolan mod GR.15+16,*
+1030 ;*a soubor KOALA jiz musi byt v*
+1032 ;*pameti.                      *
+1034 ;*Podprogram DEKOA neni premi- *
+1036 ;*stitelny. Pro jine umisteni  *
+1038 ;*je treba jej znovu prelozit! *
+1040 ;*******************************
+1042 ;
+1044 ;POPIS SOUBORU KOALA
+1046 ;
+1048 ;Zahlavi
+1050 ;
+1052 ;Zahlavi souboru ma minimalne 27 bajtu!
+1054 ;1. az 4. bajt: 255,128,201,199
+1056 ;               identifikacni kod souboru KOALA.
+1058 ;5. az 6. bajt: obvykle 26,0
+1060 ;               delka zahlavi - 1.
+1062 ;7. bajt......: obvykle 1
+1064 ;               cislo verze programu KOALA MICROILLUSTRATOR
+1066 ;8. bajt......: 0, nebo 1, nebo 2
+1068 ;               smer komprese obrazovych dat,
+1070 ;               0 - bez komprese,
+1072 ;               1 - svisla komprese,
+1074 ;               2 - vodorovna komprese.
+1076 ;9. bajt......: obvykle 14,
+1078 ;               cislo graf. modu ANTIC.
+1080 ;10.az 13. bajt:obvykle 0,40,0,192,
+1082 ;               konfigurace VRAM,
+1084 ;               40 bajtu na radek,
+1086 ;               192 radku.
+1088 ;14.az 18. bajt:hodnoty barvovych registru 708 az 712.
+1090 ;19. a 20. bajt:celkova delka souboru KOALA - 1.
+1092 ;21. a 22. bajt:vzdy 0,0.
+1094 ;dalsi bajty jsou vyhrazeny pro:
+1096 ;nazev obrazku,jmeno autora obrazku,
+1098 ;a dva radky textu. Nejsou-li nazev, jmeno a text
+1100 ;uvedeny, jsou misto techto udajuzapsany kody 155 (23. az 26. bajt)
+1102 ;posledni bajt zahlavi je vzdy roven 162.
+1104 ;
+1106 OBRAZOVA DATA 
+1108 ;
+1110 OBRAZOVA DATA JSOU uvedena bud bez komprese, tj.
+1112 OBSAH VRAM -7680 bajtu, nebo jsou komprimovana,
+1114 ;a to 4 moznymi zpusoby:
+1116 ;1. prvni bajt ma hodnotu <1;127>,
+1118 ;coz znaci pocet opakovani cisla.
+1120 ;Cislo je druhy bajt.
+1122 ;2. prvni bajt je 0. Pak druhy a treti bajt je
+1124 ;pocet opakovani cisla. Cislo je ctvrty bajt.
+1126 ;3. prvni bajt <129;255> znaci pocet cisel - 128, ktera se
+1128 ;neopakuji.
+1130 ;4. prvni bajt je 128. Pak druhy a treti bajt je pocet
+1132 ;cisel. ctvrty a dalsi bajt jsou cisla.
+1134 ;
+3000 ;Promenne pro neprime adresovani.
+3010 ;
+3020 KAM =   $CC     ;aktualni adresa ve VRAM
+3030 COUNT = $CE     ;aktualni adresa obrazovych dat
+3040 VIDEO = $58     ;adresa pocatku VRAM
+3050 BARVA = 708     ;adr. 1. barvoveho registru
+3060 ;
+3200     *=  $6000   ; pocatek podprogramu DEKOA
+3210 ;
+3220 IKS .BYTE $00   ; x-ova souradnice <0;39>
+3230 YPS .BYTE $00   ; y-ova souradnice <0;191>
+3240 CISLO .BYTE $00 ; bajt obrazu
+3250 FLAG .BYTE $00  ; priznak konce vykreslovani
+3260 KOD .BYTE $00   ;druh komprimovanych dat
+3270 MDATA1 .BYTE $00 ;pomocna promenna
+3280 MDATA2 .BYTE $00 ;   -"-
+3290 KOLIK .WORD $00 ;pocet opakovani operace
+3300 CITAC .WORD $00 ; pomocny citac
+3302 ;
+3304 ;identifikacni kod souboru KOALA
+3306 ;
+3310 KOALA .BYTE 255,128,201,199
+3312 ;
+3314 ;konfigurace VRAM
+3320 DL  .BYTE 0,40,0,192
+3330 ;
+3340 ;Pomocne podprogramy
+3350 ;
+3360 ;inkrementuje COUNT
+3370 ;
+4000 ZVYS INC COUNT
+4010     BNE ZVYS1
+4020     INC COUNT+1
+4030 ZVYS1 RTS 
+4040 ;
+4042 ;inkrementuje CITAC
+4044 ;
+4200 PRICTI INC CITAC
+4210     BNE PRICTI1
+4220     INC CITAC+1
+4230 PRICTI1 RTS 
+4240 ;
+4242 ;podprogram pro nasobeni dvou osmibitovych cisel
+4244 ;
+4400 MULT STX MDATA1 ;zapis 1. cinitel
+4410     LSR A       ;priprav 2. cinitel
+4420     STA MDATA2  ;a zapis ho
+4430     LDX #8      ;opakuj 8x
+4440     LDA #0
+4450 MULT1 BCC MULT2 ;bit je nulovy?
+4460     CLC         ;neni
+4470     ADC MDATA1  ;pricti 1. cinitel
+4480 MULT2 ROR A     ; vydel 2
+4490     ROR MDATA2
+4500     DEX         ;opakuj 8x
+4510     BNE MULT1
+4520     LDX MDATA2
+4530     RTS 
+4540 ;
+4542 ;Realizuje KAM=VIDEO+40*Y+X
+4544 ;
+4700 VYPOCET LDA #40 ;vypocti 40*YPS
+4710     LDX YPS
+4720     JSR MULT
+4730     STX KAM     ;a uloz do KAM
+4740     STA KAM+1
+4750     LDA KAM     ;ke KAM pricti IKS
+4760     CLC 
+4770     ADC IKS
+4780     STA KAM
+4790     LDA KAM+1
+4800     ADC #0
+4810     STA KAM+1
+4820     LDA KAM     ;a potom VIDEO
+4830     CLC 
+4840     ADC VIDEO
+4850     STA KAM
+4860     LDA KAM+1
+4870     ADC VIDEO+1
+4880     STA KAM+1
+4890     RTS 
+4900 ;
+4902 ;urcuje pocet opakovani operace
+4904 ;pro 2. a 4.  zpusob komprese
+4906 ;
+5000 POCET JSR ZVYS
+5010     LDY #0      ;zjisti pocet opakovani
+5020     LDA (COUNT),Y
+5030     STA KOLIK+1 ;a uloz jej do KOLIK
+5040     JSR ZVYS
+5050     LDA (COUNT),Y
+5060     STA KOLIK
+5070     JSR ZVYS
+5072     LDA KOD     ;pro 4. zpusob vynech
+5074     CMP #128    ;zjistovani CISLa
+5076     BEQ NULUJ
+5080     LDA (COUNT),Y ;zjisti obrazovy bajt
+5090     STA CISLO   ;a uloz do CISLO
+5100     JSR ZVYS
+5110 NULUJ LDA #0    ;vynuluj citac
+5120     STA CITAC
+5130     STA CITAC+1
+5140     RTS 
+5150 ;
+5152 ;urcuje pocet opakovani operace pro 1. zpusob
+5154 ;
+5300 TWO LDY #0
+5310     LDA (COUNT),Y ;zjisti pocet opakovani
+5320     STA KOLIK
+5330     JSR ZVYS
+5340     LDA (COUNT),Y ;zjisti CISLO
+5350     STA CISLO
+5360 TWO1 STY KOLIK+1
+5370     JSR ZVYS
+5380     JSR NULUJ   ;nuluj citac
+5390     RTS 
+5400 ;
+5402 ;urcuje pocet opakovani operace pro 3. zpusob
+5404 ;
+5600 FOUR LDY #0
+5610     LDA (COUNT),Y ;vypocti pocet opakovani
+5620     AND #$7F
+5630     STA KOLIK
+5640     JMP TWO1
+5650 ;
+5652 ;2. zpusob dekomprese - svisla
+5654 ;
+5800 JEDNA JSR POCET
+5810 JEDNA1 JSR VYPOCET
+5820     LDY #0
+5830     LDA CISLO   ;vem CISLO
+5840     STA (KAM),Y ;a ukladej ho do VRAM
+5850     INC YPS     ;posun YPS
+5860     INC YPS
+5870     LDA YPS
+5880     CMP #192
+5890     BEQ JEDNA2
+5900     LDA YPS
+5910     CMP #193    ; konec sloupce?
+5920     BEQ JEDNA4  ;ano
+5930 JEDNA8 LDA IKS
+5940     CMP #40     ;konec radku ?
+5950     BEQ JEDNA5  ;ano
+5960 JEDNA6 JSR PRICTI
+5970     LDA CITAC+1 ;vsechno ulozeno?
+5980     CMP KOLIK+1
+5990     BNE JEDNA1
+6000     LDA CITAC
+6010     CMP KOLIK
+6020     BNE JEDNA1
+6030 JEDNA7 RTS      ;ano, vrat se pro dalsi data
+6040 JEDNA2 LDA #1
+6050     STA YPS
+6060     BNE JEDNA6
+6070 JEDNA4 INC IKS
+6080     LDA #0
+6090     STA YPS
+6100     BEQ JEDNA8
+6110 JEDNA5 LDA #128
+6120     STA FLAG
+6130     BNE JEDNA7
+6140 ;
+6142 ;1. zpusob dekomprese - svisla
+6144 ;
+6300 DVE JSR TWO
+6310     JMP JEDNA1
+6320 ;
+6322 ;4. zpusob dekomprese - svisla
+6324 ;
+6500 TRI JSR POCET
+6510 TRI1 JSR VYPOCET
+6520     LDY #0
+6530     LDA (COUNT),Y ;ber bajty obr. dat
+6540     STA (KAM),Y ;a ukl8dej je do VRAM
+6550     JSR ZVYS
+6560     INC YPS     ;pokracuj podobne, jako v JEDNA
+6570     INC YPS
+6580     LDA YPS
+6590     CMP #192
+6600     BEQ TRI2
+6610     LDA YPS
+6620     CMP #193
+6630     BEQ TRI4
+6640 TRI8 LDA IKS
+6650     CMP #40
+6660     BEQ TRI5
+6670 TRI6 JSR PRICTI
+6680     LDA CITAC+1
+6690     CMP KOLIK+1
+6700     BNE TRI1
+6710     LDA CITAC
+6720     CMP KOLIK
+6730     BNE TRI1
+6740 TRI7 RTS 
+6750 TRI2 LDA #1
+6760     STA YPS
+6770     BNE TRI6
+6780 TRI4 INC IKS
+6790     LDA #0
+6800     STA YPS
+6810     BEQ TRI8
+6820 TRI5 LDA #128
+6830     STA FLAG
+6840     BNE TRI7
+6850 ;
+6852 ;3. zpusob dekomprese - svisla
+7000 CTYRI JSR FOUR
+7010     JMP TRI1
+7020 ;
+7022 ;2. zpusob dekomprese - vodorovna
+7024 ;
+7200 PRVNI JSR POCET
+7210 PRVNI1 JSR VYPOCET
+7220     LDY #0
+7230     LDA CISLO   ;provadej cinnost jako v JEDNA,
+7240     STA (KAM),Y
+7250     INC IKS     ; ale vodorovne!
+7260     LDA IKS
+7270     CMP #40
+7280     BEQ PRVNI2
+7290 PRVNI3 LDA YPS
+7300     CMP #192
+7310     BEQ PRVNI4
+7320 PRVNI5 JSR PRICTI
+7330     LDA CITAC+1
+7340     CMP KOLIK+1
+7350     BNE PRVNI1
+7360     LDA CITAC
+7370     CMP KOLIK
+7380     BNE PRVNI1
+7390 PRVNI7 RTS 
+7400 PRVNI2 INC YPS
+7410     LDA #0
+7420     STA IKS
+7430     BEQ PRVNI3
+7440 PRVNI4 LDA #128
+7450     STA FLAG
+7460     BNE PRVNI7
+7470 ;
+7472 ;1. zpusob dekomprese - vodorovna
+7474 ;
+7600 DRUHA JSR TWO
+7610     JMP PRVNI1
+7620 ;
+7622 ;4. zpusob dekomprese - vodorovna
+7624 ;
+7800 TRETI JSR POCET
+7810 TRETI1 JSR VYPOCET
+7820     LDY #0
+7830     LDA (COUNT),Y
+7840     STA (KAM),Y
+7850     JSR ZVYS
+7860     INC IKS
+7870     LDA IKS
+7880     CMP #40
+7890     BEQ TRETI2
+7900 TRETI3 LDA YPS
+7910     CMP #192
+7920     BEQ TRETI4
+7930 TRETI5 JSR PRICTI
+7940     LDA CITAC+1
+7950     CMP KOLIK+1
+7960     BNE TRETI1
+7970     LDA CITAC
+7980     CMP KOLIK
+7990     BNE TRETI1
+8000 TRETI7 RTS 
+8010 TRETI2 INC YPS
+8020     LDA #0
+8030     STA IKS
+8040     BEQ TRETI3
+8050 TRETI4 LDA #128
+8060     STA FLAG
+8070     BNE TRETI7
+8080 ;
+8082 ;3. zpusob dekomprese - vodorovna
+8200 CTVRTA JSR FOUR
+8210     JMP TRETI1
+8220 ;
+8222 ;Rizeni svisle dekomprese
+8224 ;
+8400 SVISLA LDY #0
+8410     LDA (COUNT),Y ;vem KOD komprese,
+8420     STA KOD
+8430     BEQ SVISLA1 ;a zjisti zpusob
+8440     CMP #128
+8450     BEQ SVISLA3
+8460     BMI SVISLA2
+8470     JSR CTYRI   ;proved 3. zpusob
+8480 SVISLA4 LDA FLAG ;vse hotovo?
+8490     BEQ SVISLA  ;neni, pokracuj
+8500     RTS         ;ano, vrat se!
+8510 SVISLA1 JSR JEDNA ;proved 2.zpusob
+8520     JMP SVISLA4
+8530 SVISLA2 JSR DVE ;proved 1. zpusob
+8540     JMP SVISLA4
+8550 SVISLA3 JSR TRI ;proved 4. zpusob
+8560     JMP SVISLA4
+8570 ;
+8572 ;Rizeni vodorovne dekomprese
+8574 ;
+8700 VODOR LDY #0
+8710     LDA (COUNT),Y
+8720     STA KOD
+8730     BEQ VODOR1
+8740     CMP #128
+8750     BEQ VODOR3
+8760     BMI VODOR2
+8770     JSR CTVRTA
+8780 VODOR4 LDA FLAG
+8790     BEQ VODOR
+8800     RTS 
+8810 VODOR1 JSR PRVNI
+8820     JMP VODOR4
+8830 VODOR2 JSR DRUHA
+8840     JMP VODOR4
+8850 VODOR3 JSR TRETI
+8860     JMP VODOR4
+8870 ;
+8872 ;Data nekomprimovana - preneseni do VRAM
+8874 ;
+9000 BEZ JSR NULUJ
+9010     STA KOLIK
+9020     LDA #30
+9030     STA KOLIK+1
+9040     LDA VIDEO
+9050     STA KAM
+9060     LDA VIDEO+1
+9070     STA KAM+1
+9080 BEZ1 LDY #0
+9090     LDA (COUNT),Y
+9100     STA (KAM),Y
+9110     JSR PRICTI
+9120     INC KAM
+9130     BNE BEZ3
+9140     INC KAM+1
+9150 BEZ3 JSR ZVYS
+9160     LDA CITAC+1
+9170     CMP KOLIK+1
+9180     BNE BEZ1
+9190     LDA CITAC
+9200     CMP KOLIK
+9210     BNE BEZ1
+9220     LDA #128
+9230     STA FLAG
+9240     RTS 
+9250 ;
+9252 ;START PROGRAMU DEKOA
+9254 ;
+010000 DEKOM PLA 
+010010   PLA 
+010020   STA KAM+1   ;adr.souboru KOALA do KAM
+010030   PLA 
+010040   STA KAM
+010050   LDY #0
+010060 DEKOM2 LDA (KAM),Y ;jde o soubor KOALA?
+010070   CMP KOALA,Y
+010080   BNE DEKOM1
+010090   INY 
+010100   CPY #4
+010110   BMI DEKOM2
+010120   BEQ DEKOM3  ; ano, pokracuj
+010130 DEKOM1 LDA #64 ;neni,vrat do BAS. 64
+010140 DEKOM5 STA $D4
+010150   LDA #0
+010160   STA $D5
+010170   RTS 
+010180 DEKOM3 LDY #8 ;jde o mod ANTIC 14?
+010190   LDA (KAM),Y
+010200   CMP #14
+010210   BEQ DEKOM4  ;ano, pokracuj
+010220   LDA #32     ; neni, vrat do BAS. 32
+010230   BNE DEKOM5
+010240 DEKOM4 INY 
+010250 DEKOM6 LDA (KAM),Y ; je konfigurace VRAM standardni?
+010260   CMP DL-9,Y
+010270   BNE DEKOM7
+010280   INY 
+010290   CPY #13
+010300   BEQ DEKOM8  ;ano, pokracuj
+010310   BMI DEKOM6
+010320 DEKOM7 LDA #16 ;neni, vrat do BAS. 16
+010330   BNE DEKOM5
+010340 DEKOM8 LDY #13 ;prenes hodnoty do barv. reg.
+010350   LDX #0
+010360 DEKOM9 LDA (KAM),Y
+010370   STA BARVA,X
+010380   INY 
+010390   INX 
+010400   CPX #5
+010410   BNE DEKOM9
+010420   LDY #4      ;vypocti adr. obrazovych dat,
+010430   LDA (KAM),Y
+010440   CLC 
+010450   ADC KAM
+010460   STA COUNT   ;a uloz ji do COUNT
+010470   INY 
+010480   LDA (KAM),Y
+010490   ADC KAM+1
+010500   STA COUNT+1
+010510   JSR ZVYS
+010512   LDA #0      ;nastav poc. hodnoty
+010514   STA FLAG
+010516   STA IKS
+010518   STA YPS
+010520   LDY #7      ;zjisti smer dekomprese
+010530   LDA (KAM),Y
+010540   CMP #1
+010550   BEQ DEKOM10
+010560   BPL DEKOM11
+010570   JSR BEZ     ;vykresli nekomprimovany obraz
+010580 DEKOM12 LDA #0 ;vrat 0 do BAS.
+010590 DEKOM13 STA $D4
+010600   STA $D5
+010610   RTS 
+010620 DEKOM10 JSR SVISLA ;proved svislou dekompresi
+010630   LDA #0
+010640   BEQ DEKOM13
+010650 DEKOM11 JSR VODOR ;proved vodorovnou dekompresi
+010660   LDA #0
+010670   BEQ DEKOM13
+010680 ;
