@@ -46,7 +46,7 @@ Some applications are available on "Internet Archive":
 
 [Magic Painter](https://archive.org/details/a8b_Magic_Painter_Documentation_1984_Fischer_Ralf_Manseicher_Harald)
 
-Turbo 2000 Casette Operating system is available in [Česko slovenský archív programov pre ATARI XE/XL](http://atari.turiecfoto.sk/soft/):
+Turbo 2000 Casette Operating system TOS 4.1 is available in [Česko slovenský archív programov pre ATARI XE/XL](http://atari.turiecfoto.sk/soft/):
 
 [TOS 4.1](http://atari.turiecfoto.sk/soft/tos-41.zip)
 
