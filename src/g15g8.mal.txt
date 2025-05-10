@@ -1,0 +1,147 @@
+0900     .TITLE "***** G15G8.MAL *****"
+0910 ;
+0920     .SET 1,6
+0930     .SET 3,0
+0940     .SET 4,72
+0950 ;
+1000 ;*******************************
+1010 ;*     PREVOD GR.15 NA GR.8    *
+1020 ;*-----------------------------*
+1030 ;* Volani:                     *
+1040 ;*  X=USR(PREV,ADROBR,ADRRAS)  *
+1050 ;* PREV=adresa podprogramu,    *
+1060 ;* ADROBR=adr. obrazovych dat, *
+1070 ;* ADRRAS=adr. rastru.         *
+1080 ;* Pred volanim musi byt pri-  *
+1090 ;* praveny rastry a vyvolan    *
+1100 ;* graficky mod c.8.           *
+1110 ;*******************************
+1120 ;
+1130 ;   .OPT OBJ
+1140 ;
+1150 ;Pomocne promenne:
+1160 ;
+1170 POM =   $D4     ;pro neprime adresovani
+1180 VID =   $58     ;adresa VRAM
+1190 ;
+1200 ZNAK =  $0400   ;az $0403 - pomocne
+1210 CITAC = $0404   ;pomocny citac
+1220 RAD =   $0406   ;delka radku
+1230 OBR =   $0408   ;adr. obr. dat
+1240 RAS =   $040A   ;adresa rastru
+1250 FLAG =  $040C   ;priznak radku
+1260 BAJT =  $040D   ;pomocna
+1270 ;
+1280     *=  $2570
+1290 ;
+1300 PREV PLA        ;pocet parametru
+1310     PLA         ;adr.obr.dat do OBR
+1320     STA OBR+1
+1330     PLA 
+1340     STA OBR
+1350     PLA         ;adresa rastru do RAS
+1360     STA RAS+1
+1370     PLA 
+1380     STA RAS
+1390 ;
+1391     LDA #0      ;nulovani
+1392     STA CITAC   ;citace
+1393     STA CITAC+1
+1394     STA FLAG    ;priznaku radku
+1395     STA RAD     ;citace sloupcu
+1396 ;
+1400 PREV4 LDA CITAC ;vypocet adresy
+1410     CLC         ;pro vyzvednuti obrazoveho
+1420     ADC OBR     ;bajtu
+1430     STA POM
+1440     LDA CITAC+1
+1450     ADC OBR+1
+1460     STA POM+1
+1470     LDY #0      ;vyzvednuti obrazoveho
+1480     LDA (POM),Y ;bajtu
+1490     STA BAJT    ;jeho odlozeni
+1500     ;   
+1510     JSR UPRAV   ;prevod obr.bajtu
+1520     ;   
+1530     LDA CITAC   ;vypocet adr. pro
+1540     CLC         ;umisteni uprav. bajtu
+1550     ADC VID     ;do VRAM
+1560     STA POM
+1570     LDA CITAC+1
+1580     ADC VID+1
+1590     STA POM+1
+1600     LDY #0      ;umisteni upraveneho
+1610     LDA BAJT    ;bajtu do
+1620     STA (POM),Y ; VRAM
+1630 ;
+1640     INC CITAC   ;zvys citac o '1'
+1650     BNE PREV1
+1660     INC CITAC+1
+1670 PREV1 INC RAD   ;zvys citac sloupcu
+1680     LDA RAD
+1690     CMP #40     ;upraven cely radek?
+1700     BNE PREV2   ;jeste ne!
+1710     LDA #0      ;ano
+1720     STA RAD     ;nuluj citac sloupcu
+1730     LDA FLAG    ;uprav priznak radku
+1740     EOR #1
+1750     STA FLAG
+1760 PREV2 LDA CITAC ;cely obrazek upraven?
+1770     CMP #0
+1780     BNE PREV4   ;jeste ne! upravuj dal!
+1790     LDA CITAC+1
+1800     CMP #$1E
+1810     BNE PREV4   ;stale ne! upravuj dal!
+1820     RTS         ;ano! cely obr. upraven!
+1830 ;
+1840 ;Podprogram UPRAV upravi jeden bajt obrazovych dat
+1850 ;
+1860 UPRAV LDA BAJT  ;vezmi BAJT
+1870     STA ZNAK    ;uloz jej
+1880     LDX #1      ;pak ho 3x vydel '2'
+1890 UPRAV3 LSR A
+1900     LSR A
+1910     STA ZNAK,X  ;a vysledky uloz
+1920     INX 
+1930     CPX #4      ;deleno jiz 3x ?
+1940     BNE UPRAV3  ;jeste ne!
+1950 ;
+1960     LDA RAS     ;priprav adresu
+1970     STA POM     ;rastru
+1980     LDA RAS+1
+1990     STA POM+1
+2000     LDA FLAG    ;sudy nebo lichy radek?
+2010     BEQ UPRAV1  ;sudy=>adr. rastru souhlasi
+2020     LDA POM     ;lichy-> uprav adr. rastru
+2030     CLC 
+2040     ADC #4
+2050     STA POM
+2060     LDA POM+1
+2070     ADC #0
+2080     STA POM+1
+2090 ;
+2100 UPRAV1 LDX #0   ;vysledky deleni bajtu
+2110 UPRAV2 LDA ZNAK,X ;maskuj '00000011'
+2120     AND #3      ;a podle 1. dvou bitu
+2130     TAY 
+2140     LDA (POM),Y ;vyber rastr
+2150     STA ZNAK,X  ;a uloz jej
+2160     INX 
+2170     CPX #4      ;preveden cely bajt?
+2180     BNE UPRAV2  ;jeste ne!
+2190 ;
+2200     LDA ZNAK+3  ;ano! z jednotlivych
+2210     ASL A
+2220     ASL A       ;rastru sloz
+2230     ORA ZNAK+2  ;upraveny bajt
+2240     ASL A
+2250     ASL A
+2260     ORA ZNAK+1
+2270     ASL A
+2280     ASL A
+2290     ORA ZNAK
+2300     STA BAJT    ;a odloz jej
+2310 ;
+2320     RTS         ;navrat
+2330 ;
+2340 KONEC
